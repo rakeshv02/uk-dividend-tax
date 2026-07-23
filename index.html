@@ -3,14 +3,14 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Investment Calculator — Lump Sum & Monthly Contributions | Tabutility</title>
-  <meta name="description" content="Calculate future investment value with lump sum and monthly contributions. See growth charts, compound interest and total returns." />
-  <meta name="keywords" content="investment calculator, lump sum calculator, monthly investment calculator, compound interest, future value calculator" />
-  <link rel="canonical" href="https://investment.tabutility.com/" />
-  <meta property="og:title" content="Investment Calculator" />
-  <meta property="og:description" content="See how your investment grows with lump sum and monthly contributions over time." />
+  <title>UK Dividend Tax Calculator 2025/26 | Tabutility</title>
+  <meta name="description" content="Calculate UK dividend tax for 2025/26. Includes £500 dividend allowance, basic, higher and additional rate dividend tax." />
+  <meta name="keywords" content="uk dividend tax calculator, dividend tax 2025, dividend allowance, basic rate dividend, higher rate dividend" />
+  <link rel="canonical" href="https://uk-dividend-tax.tabutility.com/" />
+  <meta property="og:title" content="UK Dividend Tax Calculator 2025/26" />
+  <meta property="og:description" content="Calculate dividend tax including the £500 allowance and all tax bands for 2025/26." />
   <meta property="og:type" content="website" />
-  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📊</text></svg>" />
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💷</text></svg>" />
   <meta name="robots" content="index, follow" />
   <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7039091592734005" crossorigin="anonymous"></script>
   <script async src="https://www.googletagmanager.com/gtag/js?id=G-78VZWJ5B1W"></script>
@@ -23,55 +23,65 @@
 <div id="root"></div>
 <script type="text/babel">
 //<![CDATA[
-const { useState, useMemo } = React;
-function fmt(n){return '$'+Math.round(n).toLocaleString();}
+const { useState } = React;
+function fmt(n){return '£'+Math.round(n).toLocaleString('en-GB');}
+function pct(n,d){return d>0?(n/d*100).toFixed(1)+'%':'0%';}
+
+function calcDividendTax(otherIncome, dividends) {
+  // 2025/26 rates
+  const personalAllowance = 12570;
+  const basicLimit = 50270;
+  const higherLimit = 125140;
+  const divAllowance = 500;
+
+  // How much of personal allowance is left after other income?
+  const remainingPA = Math.max(0, personalAllowance - otherIncome);
+  // Taxable dividends after allowance
+  const taxableDivs = Math.max(0, dividends - divAllowance);
+  // Which tax band does other income fill?
+  const incomeInBasic = Math.max(0, Math.min(otherIncome - personalAllowance, basicLimit - personalAllowance));
+  const incomeInHigher = Math.max(0, Math.min(otherIncome - basicLimit, higherLimit - basicLimit));
+  const incomeInAdd = Math.max(0, otherIncome - higherLimit);
+
+  // Room left in each band for dividends
+  const roomInBasic = Math.max(0, (basicLimit - personalAllowance) - incomeInBasic);
+  const roomInHigher = Math.max(0, (higherLimit - basicLimit) - incomeInHigher);
+
+  // Dividends in each band
+  let remaining = taxableDivs;
+  const divInBasic = Math.min(remaining, roomInBasic); remaining -= divInBasic;
+  const divInHigher = Math.min(remaining, roomInHigher); remaining -= divInHigher;
+  const divInAdd = remaining;
+
+  const taxBasic = divInBasic * 0.0875;
+  const taxHigher = divInHigher * 0.3375;
+  const taxAdd = divInAdd * 0.3938;
+  const totalTax = taxBasic + taxHigher + taxAdd;
+
+  return { taxBasic, taxHigher, taxAdd, totalTax, divInBasic, divInHigher, divInAdd, taxableDivs };
+}
 
 function App() {
-  const [initial, setInitial] = useState(10000);
-  const [monthly, setMonthly] = useState(500);
-  const [rate, setRate] = useState(8);
-  const [years, setYears] = useState(20);
-  const [compound, setCompound] = useState('monthly');
+  const [other, setOther] = useState(30000);
+  const [dividends, setDividends] = useState(15000);
 
-  const freq = compound === 'monthly' ? 12 : compound === 'quarterly' ? 4 : 1;
-  const r = Number(rate)/100/freq;
-  const n = Number(years) * freq;
-  const m = Number(monthly) * (12/freq);
-
-  const futureInitial = Number(initial) * Math.pow(1+r, n);
-  const futureMonthly = r > 0 ? m * (Math.pow(1+r,n)-1)/r : m*n;
-  const total = futureInitial + futureMonthly;
-  const totalContributions = Number(initial) + Number(monthly)*12*Number(years);
-  const totalInterest = total - totalContributions;
-
-  const milestones = useMemo(()=>{
-    const pts = [];
-    for(let y=1; y<=Number(years); y++) {
-      const ni = Number(years) * (12/freq) > 0 ? y*freq : y;
-      const fi = Number(initial)*Math.pow(1+r,y*freq);
-      const fm = r>0?m*(Math.pow(1+r,y*freq)-1)/r:m*y*freq;
-      pts.push({ year:y, value: fi+fm });
-    }
-    return pts;
-  }, [initial, monthly, rate, years, compound]);
-
-  const maxVal = milestones.length ? milestones[milestones.length-1].value : 1;
-  const showEvery = Number(years) <= 10 ? 1 : Number(years) <= 20 ? 5 : 10;
+  const r = calcDividendTax(Number(other)||0, Number(dividends)||0);
+  const effectiveRate = Number(dividends) > 0 ? r.totalTax / Number(dividends) * 100 : 0;
 
   return (
-    <div style={{maxWidth:540,margin:'0 auto',paddingBottom:40}}>
+    <div style={{maxWidth:520,margin:'0 auto',paddingBottom:40}}>
       <div style={{background:'#1a1a2e',padding:'12px 20px',display:'flex',alignItems:'center',justifyContent:'space-between'}}>
         <a href="https://tabutility.com" style={{color:'#a5b4fc',textDecoration:'none',fontSize:14}}>← All Tools</a>
         <span style={{color:'#fff',fontWeight:700,fontSize:15}}>⚡ Tabutility</span>
       </div>
-      <div style={{background:'linear-gradient(135deg,#1d4ed8,#1e40af)',padding:'28px 20px',textAlign:'center',color:'#fff'}}>
-        <div style={{fontSize:36,marginBottom:8}}>📊</div>
-        <h1 style={{margin:'0 0 6px',fontSize:22,fontWeight:900}}>Investment Calculator</h1>
-        <p style={{margin:0,fontSize:13,opacity:0.85}}>Lump sum · monthly contributions · compound growth</p>
+      <div style={{background:'linear-gradient(135deg,#1d4ed8,#1e3a8a)',padding:'28px 20px',textAlign:'center',color:'#fff'}}>
+        <div style={{fontSize:36,marginBottom:8}}>💷</div>
+        <h1 style={{margin:'0 0 6px',fontSize:22,fontWeight:900}}>UK Dividend Tax Calculator</h1>
+        <p style={{margin:0,fontSize:13,opacity:0.85}}>2025/26 — £500 allowance · 8.75% / 33.75% / 39.38%</p>
       </div>
       <div style={{padding:20}}>
         <div style={{background:'#fff',borderRadius:14,padding:20,boxShadow:'0 2px 12px rgba(0,0,0,0.06)',marginBottom:16}}>
-          {[['Initial Investment','$',initial,setInitial],['Monthly Contribution','$',monthly,setMonthly]].map(([l,p,v,s])=>(
+          {[['Other Income (salary, pension etc)','£',other,setOther],['Total Dividend Income','£',dividends,setDividends]].map(([l,p,v,s])=>(
             <div key={l} style={{marginBottom:14}}>
               <label style={{fontSize:13,fontWeight:600,color:'#374151',display:'block',marginBottom:6}}>{l}</label>
               <div style={{position:'relative'}}>
@@ -81,48 +91,32 @@ function App() {
               </div>
             </div>
           ))}
-          <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:12,marginBottom:14}}>
-            <div>
-              <label style={{fontSize:13,fontWeight:600,color:'#374151',display:'block',marginBottom:6}}>Annual Return: <span style={{color:'#1d4ed8'}}>{rate}%</span></label>
-              <input type="range" min={1} max={30} step={0.5} value={rate} onChange={e=>setRate(e.target.value)} style={{width:'100%',accentColor:'#1d4ed8'}} />
-            </div>
-            <div>
-              <label style={{fontSize:13,fontWeight:600,color:'#374151',display:'block',marginBottom:6}}>Years: <span style={{color:'#1d4ed8'}}>{years}</span></label>
-              <input type="range" min={1} max={50} step={1} value={years} onChange={e=>setYears(e.target.value)} style={{width:'100%',accentColor:'#1d4ed8'}} />
-            </div>
-          </div>
-          <div>
-            <label style={{fontSize:13,fontWeight:600,color:'#374151',display:'block',marginBottom:6}}>Compounding</label>
-            <div style={{display:'flex',gap:8}}>
-              {[['monthly','Monthly'],['quarterly','Quarterly'],['annually','Annually']].map(([v,l])=>(
-                <button key={v} onClick={()=>setCompound(v)} style={{flex:1,padding:'8px',borderRadius:8,border:`2px solid ${compound===v?'#1d4ed8':'#e5e7eb'}`,background:compound===v?'#1d4ed8':'#fff',color:compound===v?'#fff':'#374151',fontWeight:600,cursor:'pointer',fontSize:12}}>{l}</button>
-              ))}
-            </div>
-          </div>
         </div>
 
         <div style={{background:'linear-gradient(135deg,#eff6ff,#dbeafe)',borderRadius:14,padding:24,textAlign:'center',marginBottom:16}}>
-          <div style={{fontSize:13,fontWeight:700,color:'#1e40af'}}>FUTURE VALUE after {years} years</div>
-          <div style={{fontSize:48,fontWeight:900,color:'#1d4ed8',margin:'6px 0'}}>{fmt(total)}</div>
-          <div style={{display:'flex',gap:20,justifyContent:'center',marginTop:8,fontSize:13}}>
-            <div><span style={{color:'#6b7280'}}>Contributed: </span><strong style={{color:'#374151'}}>{fmt(totalContributions)}</strong></div>
-            <div><span style={{color:'#6b7280'}}>Growth: </span><strong style={{color:'#16a34a'}}>+{fmt(totalInterest)}</strong></div>
-          </div>
+          <div style={{fontSize:13,fontWeight:700,color:'#1e3a8a'}}>DIVIDEND TAX DUE</div>
+          <div style={{fontSize:48,fontWeight:900,color:'#1d4ed8',margin:'6px 0'}}>{fmt(r.totalTax)}</div>
+          <div style={{fontSize:14,color:'#3b82f6'}}>Effective rate: {effectiveRate.toFixed(1)}% on total dividends</div>
         </div>
 
-        <div style={{background:'#fff',borderRadius:14,padding:16,boxShadow:'0 2px 12px rgba(0,0,0,0.06)',marginBottom:16}}>
-          <div style={{fontWeight:700,fontSize:13,color:'#374151',marginBottom:12}}>Growth Over Time</div>
-          <div style={{display:'flex',flexDirection:'column',gap:6}}>
-            {milestones.filter(m=>m.year%showEvery===0||m.year===1||m.year===Number(years)).map(m=>(
-              <div key={m.year} style={{display:'flex',alignItems:'center',gap:10}}>
-                <span style={{fontSize:12,color:'#9ca3af',width:48,flexShrink:0}}>Yr {m.year}</span>
-                <div style={{flex:1,background:'#f3f4f6',borderRadius:6,height:20,overflow:'hidden'}}>
-                  <div style={{background:'#1d4ed8',height:'100%',width:`${Math.max(2,m.value/maxVal*100)}%`,borderRadius:6,transition:'width 0.3s'}} />
-                </div>
-                <span style={{fontSize:12,fontWeight:700,color:'#1d4ed8',width:80,textAlign:'right',flexShrink:0}}>{fmt(m.value)}</span>
-              </div>
-            ))}
-          </div>
+        <div style={{background:'#fff',borderRadius:14,padding:20,boxShadow:'0 2px 12px rgba(0,0,0,0.06)'}}>
+          {[
+            ['Total Dividends', fmt(Number(dividends)||0)],
+            ['Dividend Allowance (tax-free)', '£500'],
+            ['Taxable Dividends', fmt(r.taxableDivs)],
+            ['Basic Rate (8.75%)', fmt(r.divInBasic)+' → '+fmt(r.taxBasic)+' tax'],
+            ['Higher Rate (33.75%)', fmt(r.divInHigher)+' → '+fmt(r.taxHigher)+' tax'],
+            ['Additional Rate (39.38%)', fmt(r.divInAdd)+' → '+fmt(r.taxAdd)+' tax'],
+            ['Total Dividend Tax', fmt(r.totalTax)],
+            ['Effective Rate', effectiveRate.toFixed(2)+'%'],
+          ].map(([l,v])=>(
+            <div key={l} style={{display:'flex',justifyContent:'space-between',padding:'9px 0',borderBottom:'1px solid #f0f0f0',fontSize:14}}>
+              <span style={{color:'#6b7280'}}>{l}</span><strong>{v}</strong>
+            </div>
+          ))}
+        </div>
+        <div style={{background:'#eff6ff',borderRadius:12,padding:16,marginTop:16,fontSize:13,color:'#1e3a8a',lineHeight:1.6}}>
+          <strong>2025/26 rates:</strong> £500 dividend allowance. Basic rate 8.75%, Higher rate 33.75%, Additional rate 39.38%. Dividends sit on top of other income for band purposes.
         </div>
       </div>
     </div>
