@@ -3,14 +3,14 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ROI Calculator — Return on Investment | Tabutility</title>
-  <meta name="description" content="Calculate return on investment (ROI), annualised return, and profit/loss for any investment. Simple and detailed ROI analysis." />
-  <meta name="keywords" content="roi calculator, return on investment, investment return, annualised return, profit calculator" />
-  <link rel="canonical" href="https://roi.tabutility.com/" />
-  <meta property="og:title" content="ROI Calculator — Return on Investment" />
-  <meta property="og:description" content="Calculate ROI, annualised return and profit for any investment instantly." />
+  <title>Investment Calculator — Lump Sum & Monthly Contributions | Tabutility</title>
+  <meta name="description" content="Calculate future investment value with lump sum and monthly contributions. See growth charts, compound interest and total returns." />
+  <meta name="keywords" content="investment calculator, lump sum calculator, monthly investment calculator, compound interest, future value calculator" />
+  <link rel="canonical" href="https://investment.tabutility.com/" />
+  <meta property="og:title" content="Investment Calculator" />
+  <meta property="og:description" content="See how your investment grows with lump sum and monthly contributions over time." />
   <meta property="og:type" content="website" />
-  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📈</text></svg>" />
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📊</text></svg>" />
   <meta name="robots" content="index, follow" />
   <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7039091592734005" crossorigin="anonymous"></script>
   <script async src="https://www.googletagmanager.com/gtag/js?id=G-78VZWJ5B1W"></script>
@@ -23,81 +23,106 @@
 <div id="root"></div>
 <script type="text/babel">
 //<![CDATA[
-const { useState } = React;
-function fmt(n){return '$'+Math.abs(Math.round(n)).toLocaleString();}
-function fmtPct(n){return (n>=0?'+':'')+n.toFixed(2)+'%';}
+const { useState, useMemo } = React;
+function fmt(n){return '$'+Math.round(n).toLocaleString();}
 
 function App() {
   const [initial, setInitial] = useState(10000);
-  const [final, setFinal] = useState(14500);
-  const [years, setYears] = useState(3);
-  const [fees, setFees] = useState(0);
+  const [monthly, setMonthly] = useState(500);
+  const [rate, setRate] = useState(8);
+  const [years, setYears] = useState(20);
+  const [compound, setCompound] = useState('monthly');
 
-  const inv = Number(initial)||0;
-  const fin = Number(final)||0;
-  const yrs = Number(years)||1;
-  const fee = Number(fees)||0;
+  const freq = compound === 'monthly' ? 12 : compound === 'quarterly' ? 4 : 1;
+  const r = Number(rate)/100/freq;
+  const n = Number(years) * freq;
+  const m = Number(monthly) * (12/freq);
 
-  const netFinal = fin - fee;
-  const profit = netFinal - inv;
-  const roi = inv > 0 ? (profit / inv * 100) : 0;
-  const annualised = inv > 0 && yrs > 0 ? (Math.pow(netFinal/inv, 1/yrs)-1)*100 : 0;
-  const positive = profit >= 0;
+  const futureInitial = Number(initial) * Math.pow(1+r, n);
+  const futureMonthly = r > 0 ? m * (Math.pow(1+r,n)-1)/r : m*n;
+  const total = futureInitial + futureMonthly;
+  const totalContributions = Number(initial) + Number(monthly)*12*Number(years);
+  const totalInterest = total - totalContributions;
+
+  const milestones = useMemo(()=>{
+    const pts = [];
+    for(let y=1; y<=Number(years); y++) {
+      const ni = Number(years) * (12/freq) > 0 ? y*freq : y;
+      const fi = Number(initial)*Math.pow(1+r,y*freq);
+      const fm = r>0?m*(Math.pow(1+r,y*freq)-1)/r:m*y*freq;
+      pts.push({ year:y, value: fi+fm });
+    }
+    return pts;
+  }, [initial, monthly, rate, years, compound]);
+
+  const maxVal = milestones.length ? milestones[milestones.length-1].value : 1;
+  const showEvery = Number(years) <= 10 ? 1 : Number(years) <= 20 ? 5 : 10;
 
   return (
-    <div style={{maxWidth:520,margin:'0 auto',paddingBottom:40}}>
+    <div style={{maxWidth:540,margin:'0 auto',paddingBottom:40}}>
       <div style={{background:'#1a1a2e',padding:'12px 20px',display:'flex',alignItems:'center',justifyContent:'space-between'}}>
         <a href="https://tabutility.com" style={{color:'#a5b4fc',textDecoration:'none',fontSize:14}}>← All Tools</a>
         <span style={{color:'#fff',fontWeight:700,fontSize:15}}>⚡ Tabutility</span>
       </div>
-      <div style={{background:'linear-gradient(135deg,#0891b2,#0e7490)',padding:'28px 20px',textAlign:'center',color:'#fff'}}>
-        <div style={{fontSize:36,marginBottom:8}}>📈</div>
-        <h1 style={{margin:'0 0 6px',fontSize:22,fontWeight:900}}>ROI Calculator</h1>
-        <p style={{margin:0,fontSize:13,opacity:0.85}}>Return on investment · annualised return · profit/loss</p>
+      <div style={{background:'linear-gradient(135deg,#1d4ed8,#1e40af)',padding:'28px 20px',textAlign:'center',color:'#fff'}}>
+        <div style={{fontSize:36,marginBottom:8}}>📊</div>
+        <h1 style={{margin:'0 0 6px',fontSize:22,fontWeight:900}}>Investment Calculator</h1>
+        <p style={{margin:0,fontSize:13,opacity:0.85}}>Lump sum · monthly contributions · compound growth</p>
       </div>
       <div style={{padding:20}}>
         <div style={{background:'#fff',borderRadius:14,padding:20,boxShadow:'0 2px 12px rgba(0,0,0,0.06)',marginBottom:16}}>
-          {[['Initial Investment','$',initial,setInitial],['Final Value','$',final,setFinal],['Fees / Costs','$',fees,setFees]].map(([label,prefix,val,setter])=>(
-            <div key={label} style={{marginBottom:14}}>
-              <label style={{fontSize:13,fontWeight:600,color:'#374151',display:'block',marginBottom:6}}>{label}</label>
+          {[['Initial Investment','$',initial,setInitial],['Monthly Contribution','$',monthly,setMonthly]].map(([l,p,v,s])=>(
+            <div key={l} style={{marginBottom:14}}>
+              <label style={{fontSize:13,fontWeight:600,color:'#374151',display:'block',marginBottom:6}}>{l}</label>
               <div style={{position:'relative'}}>
-                <span style={{position:'absolute',left:12,top:'50%',transform:'translateY(-50%)',color:'#6b7280'}}>{prefix}</span>
-                <input type="number" value={val} onChange={e=>setter(e.target.value)}
+                <span style={{position:'absolute',left:12,top:'50%',transform:'translateY(-50%)',color:'#6b7280'}}>{p}</span>
+                <input type="number" value={v} onChange={e=>s(e.target.value)}
                   style={{width:'100%',padding:'11px 12px 11px 28px',borderRadius:10,border:'2px solid #e5e7eb',fontSize:16,boxSizing:'border-box'}} />
               </div>
             </div>
           ))}
+          <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:12,marginBottom:14}}>
+            <div>
+              <label style={{fontSize:13,fontWeight:600,color:'#374151',display:'block',marginBottom:6}}>Annual Return: <span style={{color:'#1d4ed8'}}>{rate}%</span></label>
+              <input type="range" min={1} max={30} step={0.5} value={rate} onChange={e=>setRate(e.target.value)} style={{width:'100%',accentColor:'#1d4ed8'}} />
+            </div>
+            <div>
+              <label style={{fontSize:13,fontWeight:600,color:'#374151',display:'block',marginBottom:6}}>Years: <span style={{color:'#1d4ed8'}}>{years}</span></label>
+              <input type="range" min={1} max={50} step={1} value={years} onChange={e=>setYears(e.target.value)} style={{width:'100%',accentColor:'#1d4ed8'}} />
+            </div>
+          </div>
           <div>
-            <label style={{fontSize:13,fontWeight:600,color:'#374151',display:'block',marginBottom:6}}>Investment Period (years)</label>
-            <input type="number" value={years} onChange={e=>setYears(e.target.value)} min={0.1} step={0.5}
-              style={{width:'100%',padding:'11px 12px',borderRadius:10,border:'2px solid #e5e7eb',fontSize:16,boxSizing:'border-box'}} />
+            <label style={{fontSize:13,fontWeight:600,color:'#374151',display:'block',marginBottom:6}}>Compounding</label>
+            <div style={{display:'flex',gap:8}}>
+              {[['monthly','Monthly'],['quarterly','Quarterly'],['annually','Annually']].map(([v,l])=>(
+                <button key={v} onClick={()=>setCompound(v)} style={{flex:1,padding:'8px',borderRadius:8,border:`2px solid ${compound===v?'#1d4ed8':'#e5e7eb'}`,background:compound===v?'#1d4ed8':'#fff',color:compound===v?'#fff':'#374151',fontWeight:600,cursor:'pointer',fontSize:12}}>{l}</button>
+              ))}
+            </div>
           </div>
         </div>
 
-        <div style={{background: positive?'#f0fdf4':'#fef2f2',borderRadius:14,padding:24,textAlign:'center',marginBottom:16,boxShadow:'0 2px 12px rgba(0,0,0,0.06)'}}>
-          <div style={{fontSize:13,fontWeight:600,color:'#6b7280',marginBottom:4}}>TOTAL ROI</div>
-          <div style={{fontSize:52,fontWeight:900,color: positive?'#059669':'#dc2626'}}>{fmtPct(roi)}</div>
-          <div style={{fontSize:15,color: positive?'#059669':'#dc2626',fontWeight:700}}>{positive?'+':''}{fmt(profit)} {positive?'profit':'loss'}</div>
+        <div style={{background:'linear-gradient(135deg,#eff6ff,#dbeafe)',borderRadius:14,padding:24,textAlign:'center',marginBottom:16}}>
+          <div style={{fontSize:13,fontWeight:700,color:'#1e40af'}}>FUTURE VALUE after {years} years</div>
+          <div style={{fontSize:48,fontWeight:900,color:'#1d4ed8',margin:'6px 0'}}>{fmt(total)}</div>
+          <div style={{display:'flex',gap:20,justifyContent:'center',marginTop:8,fontSize:13}}>
+            <div><span style={{color:'#6b7280'}}>Contributed: </span><strong style={{color:'#374151'}}>{fmt(totalContributions)}</strong></div>
+            <div><span style={{color:'#6b7280'}}>Growth: </span><strong style={{color:'#16a34a'}}>+{fmt(totalInterest)}</strong></div>
+          </div>
         </div>
 
-        <div style={{background:'#fff',borderRadius:14,padding:20,boxShadow:'0 2px 12px rgba(0,0,0,0.06)'}}>
-          {[
-            ['Initial Investment', fmt(inv)],
-            ['Final Value (before fees)', fmt(fin)],
-            ['Fees / Transaction Costs', fee > 0 ? '-'+fmt(fee) : '$0'],
-            ['Net Final Value', fmt(netFinal)],
-            ['Net Profit / Loss', (positive?'+':'-')+fmt(profit)],
-            ['Total ROI', fmtPct(roi)],
-            ['Annualised Return (CAGR)', fmtPct(annualised)+' / yr'],
-          ].map(([l,v])=>(
-            <div key={l} style={{display:'flex',justifyContent:'space-between',padding:'9px 0',borderBottom:'1px solid #f0f0f0',fontSize:14}}>
-              <span style={{color:'#6b7280'}}>{l}</span>
-              <strong style={{color: l.includes('Loss')||l.includes('Fees')&&fee>0?'#dc2626':l.includes('ROI')||l.includes('Profit')||l.includes('CAGR')?positive?'#059669':'#dc2626':'#1a1a2e'}}>{v}</strong>
-            </div>
-          ))}
-        </div>
-        <div style={{background:'#ecfeff',borderRadius:12,padding:16,marginTop:16,fontSize:13,color:'#0e7490',lineHeight:1.6}}>
-          <strong>CAGR</strong> (Compound Annual Growth Rate) is the annualised ROI — useful when comparing investments held for different time periods.
+        <div style={{background:'#fff',borderRadius:14,padding:16,boxShadow:'0 2px 12px rgba(0,0,0,0.06)',marginBottom:16}}>
+          <div style={{fontWeight:700,fontSize:13,color:'#374151',marginBottom:12}}>Growth Over Time</div>
+          <div style={{display:'flex',flexDirection:'column',gap:6}}>
+            {milestones.filter(m=>m.year%showEvery===0||m.year===1||m.year===Number(years)).map(m=>(
+              <div key={m.year} style={{display:'flex',alignItems:'center',gap:10}}>
+                <span style={{fontSize:12,color:'#9ca3af',width:48,flexShrink:0}}>Yr {m.year}</span>
+                <div style={{flex:1,background:'#f3f4f6',borderRadius:6,height:20,overflow:'hidden'}}>
+                  <div style={{background:'#1d4ed8',height:'100%',width:`${Math.max(2,m.value/maxVal*100)}%`,borderRadius:6,transition:'width 0.3s'}} />
+                </div>
+                <span style={{fontSize:12,fontWeight:700,color:'#1d4ed8',width:80,textAlign:'right',flexShrink:0}}>{fmt(m.value)}</span>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
     </div>
