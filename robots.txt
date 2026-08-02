@@ -1,3 +1,4 @@
 User-agent: *
 Allow: /
+
 Sitemap: https://uk-dividend-tax.tabutility.com/sitemap.xml
